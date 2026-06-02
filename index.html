@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SuperInstance Fleet — Conservation-Aware Stars</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Inter:wght@300;400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e8;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  canvas { position: fixed; top: 0; left: 0; z-index: 0; }
+
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .header {
+    position: fixed;
+    top: 24px; left: 32px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #00d4aa;
+    margin-bottom: 4px;
+  }
+
+  .header .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #555;
+  }
+
+  .counter {
+    position: fixed;
+    bottom: 32px; left: 32px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .counter .number {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #00d4aa, #00a4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .counter .label {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .counter .sublabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #00d4aa;
+    margin-top: 2px;
+  }
+
+  .tooltip {
+    position: fixed;
+    background: rgba(10, 10, 20, 0.95);
+    border: 1px solid #00d4aa33;
+    border-radius: 8px;
+    padding: 16px;
+    pointer-events: none;
+    z-index: 100;
+    min-width: 280px;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 13px;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  .tooltip .tt-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #00d4aa;
+    margin-bottom: 4px;
+  }
+
+  .tooltip .tt-stars {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .tooltip .tt-feature {
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .tooltip .tt-metric {
+    color: #aaa;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .tooltip .tt-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #555;
+    margin-top: 8px;
+  }
+
+  .legend {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    z-index: 10;
+    pointer-events: none;
+    text-align: right;
+  }
+
+  .legend-item {
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .legend-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .patterns {
+    position: fixed;
+    top: 24px; right: 32px;
+    z-index: 10;
+    pointer-events: none;
+    text-align: right;
+  }
+
+  .patterns h3 {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 8px;
+  }
+
+  .pattern-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .pattern-budget { background: #00d4aa15; color: #00d4aa; border: 1px solid #00d4aa33; }
+  .pattern-spectral { background: #a855f715; color: #a855f7; border: 1px solid #a855f733; }
+  .pattern-size { background: #f59e0b15; color: #f59e0b; border: 1px solid #f59e0b33; }
+  .pattern-ecosystem { background: #3b82f615; color: #3b82f6; border: 1px solid #3b82f633; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="header">
+  <h1>SuperInstance Fleet</h1>
+  <div class="subtitle">conservation-aware open source</div>
+</div>
+
+<div class="patterns">
+  <h3>Patterns</h3>
+  <span class="pattern-tag pattern-budget">budget guardian</span>
+  <span class="pattern-tag pattern-spectral">spectral analysis</span>
+  <span class="pattern-tag pattern-size">size/render</span>
+  <span class="pattern-tag pattern-ecosystem">ecosystem</span>
+</div>
+
+<div class="counter">
+  <div class="number" id="starCount">0</div>
+  <div class="label">GitHub stars under conservation</div>
+  <div class="sublabel" id="repoCount">19 repos · 100% enhanced</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:#00d4aa"></span>enhanced</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>in progress</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#444"></span>vanilla fork</div>
+  <div class="legend-item" style="margin-top:8px;color:#333">node size = star count</div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-name" id="ttName"></div>
+  <div class="tt-stars" id="ttStars"></div>
+  <div class="tt-feature" id="ttFeature"></div>
+  <div class="tt-metric" id="ttMetric"></div>
+  <div class="tt-lang" id="ttLang"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Layout nodes in a force-directed-ish spread
+const nodes = fleet.map((f, i) => {
+  const angle = (i / fleet.length) * Math.PI * 2 - Math.PI / 2;
+  const radius = Math.min(W, H) * 0.3;
+  const x = W / 2 + Math.cos(angle) * radius * (0.7 + Math.random() * 0.3);
+  const y = H / 2 + Math.sin(angle) * radius * (0.7 + Math.random() * 0.3);
+  const size = 4 + Math.sqrt(f.stars / 1000) * 2;
+  return { ...f, x, y, vx: 0, vy: 0, size, targetSize: size, pulsePhase: Math.random() * Math.PI * 2 };
+});
+
+// Star field background
+const bgStars = Array.from({length: 200}, () => ({
+  x: Math.random() * 3000,
+  y: Math.random() * 2000,
+  size: Math.random() * 1.5,
+  alpha: 0.1 + Math.random() * 0.3
+}));
+
+// Build connection edges
+const edges = [];
+connections.forEach(group => {
+  for (let i = 0; i < group.length; i++) {
+    for (let j = i + 1; j < group.length; j++) {
+      const a = nodes.findIndex(n => n.name === group[i]);
+      const b = nodes.findIndex(n => n.name === group[j]);
+      if (a >= 0 && b >= 0) edges.push([a, b]);
+    }
+  }
+});
+
+let mouseX = -1000, mouseY = -1000;
+let hoveredNode = null;
+
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseX = -1000;
+  mouseY = -1000;
+  hoveredNode = null;
+  tooltip.classList.remove('visible');
+});
+
+// Counter animation
+let displayStars = 0;
+const targetStars = totalStars;
+function animateCounter() {
+  if (displayStars < targetStars) {
+    displayStars += Math.ceil((targetStars - displayStars) * 0.05);
+    if (displayStars > targetStars) displayStars = targetStars;
+    document.getElementById('starCount').textContent = displayStars.toLocaleString() + '+';
+  }
+}
+
+let time = 0;
+function draw() {
+  time += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background stars
+  bgStars.forEach(s => {
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha * (0.5 + 0.5 * Math.sin(time * 0.5 + s.x))})`;
+    ctx.fillRect(s.x % W, s.y % H, s.size, s.size);
+  });
+
+  // Center glow
+  const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W,H) * 0.5);
+  grad.addColorStop(0, 'rgba(0, 212, 170, 0.03)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw edges
+  edges.forEach(([a, b]) => {
+    const na = nodes[a], nb = nodes[b];
+    ctx.strokeStyle = 'rgba(0, 212, 170, 0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(na.x, na.y);
+    ctx.lineTo(nb.x, nb.y);
+    ctx.stroke();
+  });
+
+  // Check hover
+  hoveredNode = null;
+  nodes.forEach(n => {
+    const dx = mouseX - n.x, dy = mouseY - n.y;
+    if (Math.sqrt(dx*dx + dy*dy) < n.size + 8) {
+      hoveredNode = n;
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const isHovered = n === hoveredNode;
+    const pulse = Math.sin(time * 2 + n.pulsePhase) * 0.15 + 1;
+    const size = n.size * pulse * (isHovered ? 1.4 : 1);
+
+    // Outer glow
+    const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, size * 3);
+    glow.addColorStop(0, isHovered ? 'rgba(0, 212, 170, 0.3)' : 'rgba(0, 212, 170, 0.1)');
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(n.x - size * 3, n.y - size * 3, size * 6, size * 6);
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
+    ctx.fillStyle = isHovered ? '#00ffcc' : n.color;
+    ctx.fill();
+
+    // Inner bright
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, size * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = isHovered ? '#ffffff' : 'rgba(255,255,255,0.7)';
+    ctx.fill();
+
+    // Label
+    if (n.size > 6 || isHovered) {
+      ctx.font = `${isHovered ? '12' : '10'}px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = isHovered ? '#fff' : 'rgba(255,255,255,0.4)';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.name, n.x, n.y + size + 14);
+    }
+  });
+
+  // Tooltip
+  if (hoveredNode) {
+    tooltip.classList.add('visible');
+    document.getElementById('ttName').textContent = hoveredNode.name;
+    document.getElementById('ttStars').textContent = `★ ${hoveredNode.stars.toLocaleString()} · ${hoveredNode.lang}`;
+    document.getElementById('ttFeature').textContent = hoveredNode.feature;
+    document.getElementById('ttMetric').textContent = `"${hoveredNode.metric}"`;
+
+    let tx = mouseX + 16, ty = mouseY - 16;
+    if (tx + 300 > W) tx = mouseX - 300;
+    if (ty + 150 > H) ty = mouseY - 150;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+  } else {
+    tooltip.classList.remove('visible');
+  }
+
+  animateCounter();
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
